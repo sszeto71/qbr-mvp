@@ -46,6 +46,7 @@ const GenerationForm: React.FC<GenerationFormProps> = ({ setResult }) => {
 
       const data = await response.json();
       console.log('Received data:', data);
+      console.log('Data being sent to setResult:', data);
       setResult(data);
     } catch (error) {
       console.error('Fetch Error:', error);

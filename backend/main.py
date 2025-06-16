@@ -109,12 +109,35 @@ def calculate_revenue_and_aov(data):
 
 def generate_qbr_content(client_name, client_website, industry, extracted_data, total_revenue, average_order_value):
     prompt = f"""
-    Generate a Quarterly Business Review (QBR) presentation content for {client_name} ({client_website}), an {industry} company.
+    Generate a 2nd Quarter Business Review (QBR) presentation content for {client_name} ({client_website}), an {industry} company.
     Total Revenue: ${total_revenue:,.2f}. Average Order Value: ${average_order_value:,.2f}.
     Use the following data to create content for 6 slides.
 
     Data:
     {extracted_data}
+
+    The following columns should be included as part of this analysis.
+
+    Column Name
+    Campaign
+    Campaign Segment
+    Campaign Type
+    Unique Impressions (user only)
+    Revenue per Purchase
+    Revenue
+    Purchases
+    Unique Open Rate
+    Unique Clicks (user only)
+    Unique Click %
+    CTOR
+    Add to Cart
+    Impressions (user only)
+    Revenue per Delivered
+    Revenue per Impression
+    Revenue per Order
+    Revenue per Unique Click
+
+    Identify trends and insights
 
     Slide Themes:
     1. Account Overview: Key performance highlights
@@ -183,12 +206,11 @@ def generate_qbr_content(client_name, client_website, industry, extracted_data, 
 
 
 @app.post("/api/generate")
-
 async def generate_qbr(
     client_name: str = Form(...),
     client_website: str = Form(...),
     industry: str = Form(...),
-    customer_data_files: List[UploadFile] = File(...),
+    customer_data_files: List[UploadFile] = File(default=[]),
 ):
     logger.info("Received request at /api/generate")
     logger.info(f"Client Name: {client_name}")
@@ -202,23 +224,32 @@ async def generate_qbr(
     logger.info(f"Type of customer_data_files: {type(customer_data_files)}")
     
     extracted_data = ""
+    # Initialize variables to avoid NameError
+    total_revenue = 0
+    total_purchases = 0
+    average_order_value = 0
+    
     try:
-        for file in customer_data_files:
-            logger.info(f"Processing file: {file.filename}")
-            logger.info(f"File content type: {file.content_type}")
-            logger.info(f"File size: {len(await file.read())} bytes")
-            await file.seek(0)  # Reset file pointer after reading
-            try:
-                if file.filename.endswith(".pdf"):
-                    extracted_data += extract_text_from_pdf(file)
-                elif file.filename.endswith(".csv"):
-                    csv_data = extract_data_from_csv(file)
-                    extracted_data += str(csv_data)
-                    total_revenue, total_purchases, average_order_value = calculate_revenue_and_aov(csv_data)
-                else:
-                    logger.warning(f"Unsupported file type: {file.filename}")
-            except Exception as e:
-                logger.error(f"Error processing file {file.filename}: {e}")
+        if not customer_data_files:
+            logger.warning("No files uploaded, proceeding with empty data")
+            extracted_data = "No customer data files provided"
+        else:
+            for file in customer_data_files:
+                logger.info(f"Processing file: {file.filename}")
+                logger.info(f"File content type: {file.content_type}")
+                logger.info(f"File size: {len(await file.read())} bytes")
+                await file.seek(0)  # Reset file pointer after reading
+                try:
+                    if file.filename.endswith(".pdf"):
+                        extracted_data += extract_text_from_pdf(file)
+                    elif file.filename.endswith(".csv"):
+                        csv_data = extract_data_from_csv(file)
+                        extracted_data += str(csv_data)
+                        total_revenue, total_purchases, average_order_value = calculate_revenue_and_aov(csv_data)
+                    else:
+                        logger.warning(f"Unsupported file type: {file.filename}")
+                except Exception as e:
+                    logger.error(f"Error processing file {file.filename}: {e}")
         
         logger.info(f"Extracted data before QBR generation: {extracted_data}")
         logger.info(f"Type of extracted_data: {type(extracted_data)}")
@@ -238,17 +269,36 @@ async def generate_qbr(
             return {"error": "JSONDecodeError"}
         logger.debug("JSON parsed")
         logger.info(f"QBR content: {qbr_content}")
-        logger.info("Returning parsed content")
-        response = fastapi.responses.JSONResponse(content=parsed_content)
+        logger.debug(f"About to create response_data with qbr_content type: {type(parsed_content)}")
+        response_data = {
+            "qbr_content": json.dumps(parsed_content),
+            "total_revenue": total_revenue,
+            "total_purchases": total_purchases,
+            "average_order_value": average_order_value
+        }
+        logger.debug(f"Response data keys: {list(response_data.keys())}")
+        response = fastapi.responses.JSONResponse(content=response_data)
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
         return response
     except json.JSONDecodeError as e:
-        logger.error(f"JSONDecodeError: {e}")
-        return {"error": "JSONDecodeError"}  # Return an error message
+        logger.error(f"JSONDecodeError: {e}, qbr_content: {qbr_content}")
+        return {
+            "error": "JSONDecodeError",
+            "qbr_content": "{}",  # Provide empty QBR content
+            "total_revenue": total_revenue,
+            "total_purchases": total_purchases,
+            "average_order_value": average_order_value
+        }
     except Exception as e:
         logger.error(f"Error in generate_qbr_content: {e}")
         logger.exception(e)
-        return {"error": "Internal Server Error"}  # Return an error message
+        return {
+            "error": "Internal Server Error",
+            "qbr_content": "{}",  # Provide empty QBR content
+            "total_revenue": total_revenue,
+            "total_purchases": total_purchases,
+            "average_order_value": average_order_value
+        }
     finally:
         logger.info("Finished processing request at /api/generate")
 
