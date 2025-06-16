@@ -68,6 +68,25 @@ export default function Home() {
 
   return (
     <main>
+      {totalRevenue > 0 && (
+        <div className="max-w-4xl mx-auto p-6">
+          <h2 className="text-2xl font-semibold mb-4 text-blue-600 border-b pb-2">Key Metrics</h2>
+          <ul className="space-y-2">
+            <li className="flex items-start">
+              <span className="text-blue-500 mr-2">•</span>
+              <span className="text-gray-700">Total Revenue: ${totalRevenue.toFixed(2)}</span>
+            </li>
+            <li className="flex items-start">
+              <span className="text-blue-500 mr-2">•</span>
+              <span className="text-gray-700">Total Purchases: {totalPurchases}</span>
+            </li>
+            <li className="flex items-start">
+              <span className="text-blue-500 mr-2">•</span>
+              <span className="text-gray-700">Average Order Value: ${averageOrderValue.toFixed(2)}</span>
+            </li>
+          </ul>
+        </div>
+      )}
       {result ? (
         <ResultsDisplay result={result} setResult={setResult} />
       ) : (
@@ -107,25 +126,6 @@ export default function Home() {
           setTotalPurchases(data?.total_purchases || 0);
           setAverageOrderValue(data?.average_order_value || 0);
         }} />
-      )}
-      {totalRevenue > 0 && (
-        <div className="max-w-4xl mx-auto p-6">
-          <h2 className="text-2xl font-semibold mb-4 text-blue-600 border-b pb-2">Key Metrics</h2>
-          <ul className="space-y-2">
-            <li className="flex items-start">
-              <span className="text-blue-500 mr-2">•</span>
-              <span className="text-gray-700">Total Revenue: ${totalRevenue.toFixed(2)}</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-blue-500 mr-2">•</span>
-              <span className="text-gray-700">Total Purchases: {totalPurchases}</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-blue-500 mr-2">•</span>
-              <span className="text-gray-700">Average Order Value: ${averageOrderValue.toFixed(2)}</span>
-            </li>
-          </ul>
-        </div>
       )}
     </main>
   );
