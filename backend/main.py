@@ -112,7 +112,7 @@ def generate_qbr_content(client_name, client_website, industry, extracted_data):
     """
 
     try:
-        logger.info(f"Generating QBR content with prompt: {prompt}")
+        logger.info("Generating QBR content with prompt")
         logger.debug(f"Full prompt: {prompt}")
         logger.debug(f"Extracted data: {extracted_data}")
         response = model.generate_content(prompt)
@@ -199,9 +199,12 @@ async def generate_qbr(
         
         logger.info(f"Extracted data before QBR generation: {extracted_data}")
         logger.info(f"Type of extracted_data: {type(extracted_data)}")
+        logger.debug(f"Extracted data content: {extracted_data}")
+        logger.info("Calling generate_qbr_content")
         logger.info("Calling generate_qbr_content")
         qbr_content = generate_qbr_content(client_name, client_website, industry, extracted_data)
         logger.info("generate_qbr_content returned")
+        logger.debug(f"Raw QBR content from Gemini: {qbr_content}")
         # Parse the JSON string to ensure it's valid JSON
         import json
         logger.debug("Parsing JSON")
