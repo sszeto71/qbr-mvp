@@ -87,10 +87,31 @@ def extract_data_from_csv(csv_file):
     return data
 
 
-def generate_qbr_content(client_name, client_website, industry, extracted_data):
+def calculate_revenue_and_aov(data):
+    total_revenue = 0
+    total_purchases = 0
+    for row in data:
+        try:
+            revenue = float(row.get('Revenue', 0))
+            purchases = int(row.get('Purchases', 0))
+            total_revenue += revenue
+            total_purchases += purchases
+        except ValueError as e:
+            logger.error(f"ValueError: {e}. Skipping row: {row}")
+            continue  # Skip this row and move to the next one
+        except TypeError as e:
+            logger.error(f"TypeError: {e}. Skipping row: {row}")
+            continue
+    
+    average_order_value = total_revenue / total_purchases if total_purchases else 0
+    return total_revenue, total_purchases, average_order_value
+
+
+def generate_qbr_content(client_name, client_website, industry, extracted_data, total_revenue, average_order_value):
     prompt = f"""
     Generate a Quarterly Business Review (QBR) presentation content for {client_name} ({client_website}), an {industry} company.
-    Use the following data to create content for 6 slides:
+    Total Revenue: ${total_revenue:,.2f}. Average Order Value: ${average_order_value:,.2f}.
+    Use the following data to create content for 6 slides.
 
     Data:
     {extracted_data}
@@ -191,7 +212,9 @@ async def generate_qbr(
                 if file.filename.endswith(".pdf"):
                     extracted_data += extract_text_from_pdf(file)
                 elif file.filename.endswith(".csv"):
-                    extracted_data += str(extract_data_from_csv(file))
+                    csv_data = extract_data_from_csv(file)
+                    extracted_data += str(csv_data)
+                    total_revenue, total_purchases, average_order_value = calculate_revenue_and_aov(csv_data)
                 else:
                     logger.warning(f"Unsupported file type: {file.filename}")
             except Exception as e:
@@ -201,14 +224,18 @@ async def generate_qbr(
         logger.info(f"Type of extracted_data: {type(extracted_data)}")
         logger.debug(f"Extracted data content: {extracted_data}")
         logger.info("Calling generate_qbr_content")
-        logger.info("Calling generate_qbr_content")
-        qbr_content = generate_qbr_content(client_name, client_website, industry, extracted_data)
+        qbr_content = generate_qbr_content(client_name, client_website, industry, extracted_data, total_revenue, average_order_value)
         logger.info("generate_qbr_content returned")
         logger.debug(f"Raw QBR content from Gemini: {qbr_content}")
+
         # Parse the JSON string to ensure it's valid JSON
         import json
         logger.debug("Parsing JSON")
-        parsed_content = json.loads(qbr_content)
+        try:
+            parsed_content = json.loads(qbr_content)
+        except json.JSONDecodeError as e:
+            logger.error(f"JSONDecodeError: {e}, content: {qbr_content}")
+            return {"error": "JSONDecodeError"}
         logger.debug("JSON parsed")
         logger.info(f"QBR content: {qbr_content}")
         logger.info("Returning parsed content")

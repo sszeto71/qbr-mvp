@@ -88,15 +88,18 @@ const GenerationForm: React.FC<GenerationFormProps> = ({ setResult }) => {
         
         <div className="mb-6">
           <label htmlFor="industry" className="block text-gray-700 text-sm font-bold mb-2">Industry:</label>
-          <input
-            type="text"
+          <select
             id="industry"
             value={industry}
             onChange={(e) => setIndustry(e.target.value)}
             required
             className="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500"
-            placeholder="e.g., Technology, Healthcare, Finance"
-          />
+          >
+            <option value="">Select an industry</option>
+            <option value="E-Commerce">E-Commerce</option>
+            <option value="Finance">Finance</option>
+            <option value="Media">Media</option>
+          </select>
         </div>
         
         <div className="mb-8">
