@@ -9,8 +9,11 @@ import google.generativeai as genai
 import PyPDF2
 import uvicorn
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, Form, UploadFile, responses
+from fastapi import FastAPI, File, Form, UploadFile, responses, Request
 from fastapi.middleware.cors import CORSMiddleware
+
+from backend.prompt_generator import create_qbr_prompt
+from backend.pdf_generator import generate_qbr_pdf, create_pdf_response
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -92,62 +95,80 @@ def calculate_revenue_and_aov(data):
     average_order_value = total_revenue / total_purchases if total_purchases else 0
     return total_revenue, total_purchases, average_order_value
 
+def format_numbers_in_qbr(qbr_content_json):
+    logger.info("Starting format_numbers_in_qbr")
+    logger.info(f"Input type: {type(qbr_content_json)}")
+    logger.info(f"Input preview: {str(qbr_content_json)[:200]}...")
+    
+    try:
+        qbr_content = json.loads(qbr_content_json)
+        logger.info(f"Successfully parsed JSON, structure: {list(qbr_content.keys()) if isinstance(qbr_content, dict) else 'Not a dict'}")
+        
+        # Format numbers in slide 2 (Key Metrics)
+        if "slide2" in qbr_content and "content" in qbr_content["slide2"]:
+            logger.info(f"Processing slide2 content with {len(qbr_content['slide2']['content'])} items")
+            formatted_content = []
+            for i, item in enumerate(qbr_content["slide2"]["content"]):
+                logger.info(f"Processing slide2 item {i}: '{item}'")
+                # Use regex to find and format numbers, handling both integers and floats
+                import re
+                
+                def format_number(match):
+                    number_str = match.group(0)
+                    logger.info(f"format_number processing: '{number_str}'")
+                    
+                    # Skip if already formatted (contains commas)
+                    if ',' in number_str:
+                        logger.info(f"Skipping already formatted number: '{number_str}'")
+                        return number_str
+                    
+                    if '.' in number_str:
+                        # It's a float, format it with commas and keep the decimal part
+                        parts = number_str.split('.')
+                        try:
+                            integer_part = int(parts[0])
+                            formatted = f"{integer_part:,}.{parts[1]}"
+                            logger.info(f"Formatted float '{number_str}' to '{formatted}'")
+                            return formatted
+                        except ValueError as e:
+                            logger.error(f"Failed to format float '{number_str}': {e}")
+                            return number_str
+                    else:
+                        # It's an integer, format it with commas
+                        try:
+                            formatted = f"{int(number_str):,}"
+                            logger.info(f"Formatted integer '{number_str}' to '{formatted}'")
+                            return formatted
+                        except ValueError as e:
+                            logger.error(f"Failed to format integer '{number_str}': {e}")
+                            return number_str
 
-def generate_qbr_content(client_name, client_website, industry, extracted_data, total_revenue, average_order_value):
-    prompt = f"""
-    Generate a 2nd Quarter Business Review (QBR) presentation content for {client_name} ({client_website}), an {industry} company.
-    Total Revenue: ${total_revenue:,.2f}. Average Order Value: ${average_order_value:,.2f}.
-    Use the following data to create content for 6 slides.
+                # Regex to find numbers (including those with commas and decimals)
+                # This regex will find sequences of digits, optionally with commas, and optionally a decimal part.
+                item = re.sub(r'\d{1,3}(?:,\d{3})*(?:\.\d+)?|\d+', format_number, item)
+                formatted_content.append(item)
+            qbr_content["slide2"]["content"] = formatted_content
 
-    Data:
-    {extracted_data}
+        return json.dumps(qbr_content)
+    except (json.JSONDecodeError, TypeError) as e:
+        logger.error(f"Error formatting numbers in QBR content: {e}")
+        return qbr_content_json # Return original content if formatting fails
 
-    The following columns should be included as part of this analysis.
+def generate_qbr_content(client_name, client_website, industry, extracted_data, total_revenue, total_purchases, average_order_value):
+    # Create a summary of the data analysis for the prompt
+    data_summary = f"""
+Total Revenue: ${total_revenue:,.2f}
+Total Purchases: {total_purchases:,}
+Average Order Value: ${average_order_value:,.2f}
+Data Extract (first 1000 chars):
+{str(extracted_data[:1000])}...
+"""
 
-    Column Name
-    Campaign
-    Campaign Segment
-    Campaign Type
-    Unique Impressions (user only)
-    Revenue per Purchase
-    Revenue
-    Purchases
-    Unique Open Rate
-    Unique Clicks (user only)
-    Unique Click %
-    CTOR
-    Add to Cart
-    Impressions (user only)
-    Revenue per Delivered
-    Revenue per Impression
-    Revenue per Order
-    Revenue per Unique Click
-
-    Identify trends and insights
-    Identify the best performing segments
-    Identify the best segment categories that were used for the best performing campaigns
-    Identify the benefits and capabilities that are driving the best results and performance for the {client_name} ({client_website}), which is using the Blueshift platform (https://blueshift.com/) for executing their marketing strategy and running their digital marketing campaigns to achieve their marketing and company goals and objectives.
-
-    Slide Themes:
-    1. Account Overview: Key performance highlights
-    2. Campaign Performance: Highlight key trends/analysis on campaigns
-    3. Campaign Performance By Type: Share insight and results base on campaign type. Identify the campaign type that has the best results
-    4. Campaign Categorization: Identify campaign categorization and top performing campaign segment category
-    5. Driving Marketing Success: Identify benefits and results from platform's key features and capabilities
-    6. Blueshift Recommendations: Suggest actionable next steps for the next 1-2 quarters.
-
-    Format the output as a JSON object with the following structure:
-    {{
-        "slide1": {{"title": "Account Overview", "content": ["Bullet point 1", "Bullet point 2", ...]}},
-        "slide2": {{"title": "Campaign Performance", "content": ["Bullet point 1", "Bullet point 2", ...]}},
-        ...
-    }}
-    """
+    prompt = create_qbr_prompt(client_name, client_website, industry, data_summary)
 
     try:
-        logger.info("Generating QBR content with prompt")
+        logger.info("Generating QBR content with enhanced prompt")
         logger.debug(f"Full prompt: {prompt}")
-        logger.debug(f"Extracted data: {extracted_data}")
         response = model.generate_content(prompt)
         logger.info(f"Generated QBR content: {response.text}")
 
@@ -244,9 +265,12 @@ async def generate_qbr(
         logger.info(f"Type of extracted_data: {type(extracted_data)}")
         logger.debug(f"Extracted data content: {extracted_data}")
         logger.info("Calling generate_qbr_content")
-        qbr_content = generate_qbr_content(client_name, client_website, industry, extracted_data, total_revenue, average_order_value)
+        qbr_content = generate_qbr_content(client_name, client_website, industry, extracted_data, total_revenue, total_purchases, average_order_value)
         logger.info("generate_qbr_content returned")
         logger.debug(f"Raw QBR content from Gemini: {qbr_content}")
+
+        # Format numbers in the QBR content before returning
+        qbr_content = format_numbers_in_qbr(qbr_content)
 
         # Parse the JSON string to ensure it's valid JSON
         import json
@@ -290,3 +314,53 @@ async def generate_qbr(
         }
     finally:
         logger.info("Finished processing request at /api/generate")
+
+
+@app.post("/api/export-pdf")
+async def export_pdf(
+    client_name: str = Form(...),
+    client_website: str = Form(...),
+    industry: str = Form(...),
+    qbr_content: str = Form(...),
+):
+    """
+    Export QBR content to PDF format with Blueshift branding
+    
+    Args:
+        client_name: Name of the client
+        client_website: Client's website URL
+        industry: Client's industry
+        qbr_content: JSON string containing the QBR slide data
+    
+    Returns:
+        PDF file as downloadable attachment
+    """
+    logger.info("Received request at /api/export-pdf")
+    logger.info(f"Client Name: {client_name}")
+    logger.info(f"Industry: {industry}")
+    
+    try:
+        # Generate PDF
+        pdf_bytes = generate_qbr_pdf(
+            qbr_data=qbr_content,
+            client_name=client_name,
+            client_website=client_website,
+            industry=industry
+        )
+        
+        # Create filename
+        safe_client_name = "".join(c for c in client_name if c.isalnum() or c in (' ', '-', '_')).rstrip()
+        filename = f"QBR_{safe_client_name.replace(' ', '_')}.pdf"
+        
+        logger.info(f"Successfully generated PDF: {filename}")
+        
+        # Return PDF as downloadable file
+        return create_pdf_response(pdf_bytes, filename)
+        
+    except Exception as e:
+        logger.error(f"Error exporting PDF: {str(e)}")
+        logger.exception(e)
+        return {
+            "error": "PDF Export Error",
+            "message": f"Failed to generate PDF: {str(e)}"
+        }

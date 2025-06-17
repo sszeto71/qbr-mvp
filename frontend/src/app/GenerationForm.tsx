@@ -8,7 +8,11 @@ interface SlideData {
 }
 
 interface GenerationFormProps {
-  setResult: (result: { [key: string]: SlideData } | null) => void;
+  setResult: (result: { [key: string]: SlideData } | null, clientInfo?: {
+    client_name: string;
+    client_website: string;
+    industry: string;
+  }) => void;
 }
 
 const GenerationForm: React.FC<GenerationFormProps> = ({ setResult }) => {
@@ -47,7 +51,15 @@ const GenerationForm: React.FC<GenerationFormProps> = ({ setResult }) => {
       const data = await response.json();
       console.log('Received data:', data);
       console.log('Data being sent to setResult:', data);
-      setResult(data);
+      
+      // Pass both the result data and client information
+      const clientInfo = {
+        client_name: clientName,
+        client_website: clientWebsite,
+        industry: industry
+      };
+      
+      setResult(data, clientInfo);
     } catch (error) {
       console.error('Fetch Error:', error);
       // Handle error appropriately
@@ -58,7 +70,10 @@ const GenerationForm: React.FC<GenerationFormProps> = ({ setResult }) => {
 
   return (
     <div className="max-w-2xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-8 text-center">QBR Generator</h1>
+      <div className="flex justify-center mb-6">
+        <img src="/blueshift_logo.png" alt="Blueshift Logo" className="h-12" />
+      </div>
+      <h1 className="text-3xl font-bold mb-8 text-center text-gray-800">QBR Generator</h1>
       
       <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-lg">
         <div className="mb-6">
@@ -94,7 +109,7 @@ const GenerationForm: React.FC<GenerationFormProps> = ({ setResult }) => {
             value={industry}
             onChange={(e) => setIndustry(e.target.value)}
             required
-            className="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500"
+            className="w-full py-3 px-4 text-gray-700 leading-tight border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Select an industry</option>
             <option value="E-Commerce">E-Commerce</option>
@@ -123,7 +138,7 @@ const GenerationForm: React.FC<GenerationFormProps> = ({ setResult }) => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-blue-500 hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold py-3 px-4 rounded focus:outline-none focus:shadow-outline transition duration-200"
+          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold py-3 px-4 rounded-md focus:outline-none focus:shadow-outline transition duration-200"
         >
           {loading ? 'Generating QBR...' : 'Generate QBR'}
         </button>
