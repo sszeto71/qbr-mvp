@@ -1,28 +1,20 @@
-import logging
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
-logger.info(f"Backend port is set to: 8000")
-import logging
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
 # backend/main.py
-import fastapi
-from fastapi import FastAPI, File, UploadFile, Form
-from fastapi.middleware.cors import CORSMiddleware
+import csv
+import json
+import logging
+import os
 from typing import List
-import uvicorn
+
 import google.generativeai as genai
 import PyPDF2
-import csv
-import logging
-import json
-
-# logger.debug("google.generativeai imported successfully")
+import uvicorn
+from dotenv import load_dotenv
+from fastapi import FastAPI, File, Form, UploadFile, responses
+from fastapi.middleware.cors import CORSMiddleware
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-logger.debug("google.generativeai imported successfully")
 
 app = FastAPI()
 
@@ -35,21 +27,15 @@ app.add_middleware(
 )
 
 # Replace with your actual Gemini API key
-import os
-from dotenv import load_dotenv
-
 load_dotenv()
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-import logging
-logging.basicConfig(level=logging.DEBUG)
 
 # Check if GOOGLE_API_KEY is set
-if "GOOGLE_API_KEY" in os.environ:
-    logging.info("GOOGLE_API_KEY is set")
-    logging.info(f"GOOGLE_API_KEY value: {os.environ['GOOGLE_API_KEY']}")
+if GOOGLE_API_KEY:
+    logger.info("GOOGLE_API_KEY is set")
 else:
-    logging.info("GOOGLE_API_KEY is not set")
+    logger.warning("GOOGLE_API_KEY is not set")
 
 if not GOOGLE_API_KEY:
     raise ValueError("GOOGLE_API_KEY environment variable not set")
@@ -138,12 +124,15 @@ def generate_qbr_content(client_name, client_website, industry, extracted_data, 
     Revenue per Unique Click
 
     Identify trends and insights
+    Identify the best performing segments
+    Identify the best segment categories that were used for the best performing campaigns
+    Identify the benefits and capabilities that are driving the best results and performance for the {client_name} ({client_website}), which is using the Blueshift platform (https://blueshift.com/) for executing their marketing strategy and running their digital marketing campaigns to achieve their marketing and company goals and objectives.
 
     Slide Themes:
     1. Account Overview: Key performance highlights
     2. Campaign Performance: Highlight key trends/analysis on campaigns
     3. Campaign Performance By Type: Share insight and results base on campaign type. Identify the campaign type that has the best results
-    4. Campaign Categorization: Identify campaign categorization and top performing campaign category
+    4. Campaign Categorization: Identify campaign categorization and top performing campaign segment category
     5. Driving Marketing Success: Identify benefits and results from platform's key features and capabilities
     6. Blueshift Recommendations: Suggest actionable next steps for the next 1-2 quarters.
 
@@ -277,7 +266,7 @@ async def generate_qbr(
             "average_order_value": average_order_value
         }
         logger.debug(f"Response data keys: {list(response_data.keys())}")
-        response = fastapi.responses.JSONResponse(content=response_data)
+        response = responses.JSONResponse(content=response_data)
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
         return response
     except json.JSONDecodeError as e:
@@ -301,11 +290,3 @@ async def generate_qbr(
         }
     finally:
         logger.info("Finished processing request at /api/generate")
-
-if __name__ == "__main__":
-    port = 8000
-    logger.info(f"Backend port is set to: {port}")
-    logger.info("Starting uvicorn")
-    uvicorn.run(app, host="0.0.0.0", port=port, reload=True)
-    logger.info(f"Starting Uvicorn server on port {port}")
-    logger.info(f"Uvicorn server started on port {port}")
