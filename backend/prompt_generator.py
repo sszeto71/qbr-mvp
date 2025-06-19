@@ -5,7 +5,7 @@ This module constructs dynamic, industry-aware prompts for the QBR
 content generation.
 """
 
-from backend.industry_intelligence import get_industry_context
+from industry_intelligence import get_industry_context
 
 def create_qbr_prompt(client_name: str, client_website: str, industry: str, data_analysis: str) -> str:
     """

@@ -12,8 +12,8 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, UploadFile, responses, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.prompt_generator import create_qbr_prompt
-from backend.pdf_generator import generate_qbr_pdf, create_pdf_response
+from prompt_generator import create_qbr_prompt
+from pdf_generator import generate_qbr_pdf, create_pdf_response
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -30,7 +30,8 @@ app.add_middleware(
 )
 
 # Replace with your actual Gemini API key
-load_dotenv()
+# Load .env file from the backend directory
+load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
