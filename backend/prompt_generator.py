@@ -6,6 +6,14 @@ content generation.
 """
 
 from industry_intelligence import get_industry_context
+from blueshift_content_templates import (
+    CHALLENGES_OPPORTUNITIES_CONTENT,
+    STRATEGIC_RECOMMENDATIONS_CONTENT,
+    BLUESHIFT_VALUE_PROPOSITIONS,
+    ROI_PROOF_POINTS,
+    get_blueshift_recommendations,
+    get_roi_projections
+)
 
 def create_qbr_prompt(client_name: str, client_website: str, industry: str, data_analysis: str) -> str:
     """
@@ -56,6 +64,22 @@ Analyze the following campaign performance data summary. Identify trends, top-pe
 and areas with potential for improvement, keeping the industry context in mind.
 {data_analysis}
 
+**BLUESHIFT PLATFORM FOCUS:**
+This QBR must demonstrate the exceptional value and ROI of Blueshift's intelligent customer engagement platform.
+Highlight these key differentiators:
+- **AI-Powered Journey Optimization**: Showcase how Blueshift's machine learning automatically optimizes customer journeys
+- **Real-Time Personalization**: Emphasize dynamic content adaptation and behavioral triggers
+- **Unified Customer Data Platform**: Highlight the single source of truth for customer interactions
+- **Cross-Channel Orchestration**: Demonstrate seamless email, SMS, push, and web coordination
+- **Predictive Analytics**: Show churn prediction, lifetime value optimization, and customer scoring capabilities
+
+**ROI DEMONSTRATION REQUIREMENTS:**
+- Include specific percentage improvements and financial impact metrics
+- Show before/after comparisons with Blueshift implementation
+- Highlight industry-leading performance benchmarks
+- Demonstrate cost savings through automation and efficiency gains
+- Project future growth potential with continued platform optimization
+
 **PRESENTATION REQUIREMENTS:**
 Generate the QBR content structured as a JSON object with 6 keys: "slide1", "slide2", ..., "slide6".
 Each slide should have:
@@ -93,21 +117,54 @@ Each slide should have:
     - Campaign performance comparison table
     - Channel effectiveness metrics with ROI data
 
-5.  **Strategic Achievements & Challenges**:
-    - Key accomplishments and learnings narrative
-    - Challenges converted to opportunities table
-    - Strategic initiative progress tracking
+5.  **Challenges & Opportunities**:
+    - Current market challenges analysis with Blueshift's competitive advantages
+    - Untapped growth opportunities with quantified revenue potential ($X.XM annually)
+    - Platform capability gaps assessment and Blueshift solutions mapping
+    - ROI optimization opportunities with specific improvement percentages
+    - Customer engagement evolution possibilities through AI-driven personalization
 
-6.  **Q3 2025 Roadmap & Goals**:
-    - Strategic priorities narrative
-    - SMART goals table with success metrics
-    - Quarterly targets and milestones overview
+6.  **Strategic Recommendations**:
+    - Priority initiatives leveraging Blueshift's AI and machine learning capabilities
+    - Personalization acceleration strategies with projected conversion improvements
+    - Cross-channel integration roadmap for unified customer experiences
+    - Investment priorities with specific ROI multiples (3x, 4x, 5x returns)
+    - Implementation timeline with quick wins and long-term strategic gains
+    - Success metrics and KPIs for measuring Blueshift platform optimization
 
 **DATA FORMATTING GUIDELINES:**
 - For metrics arrays: {{"name": "Metric Name", "current": "Current Value", "previous": "Previous Value", "change": "+X%" or "-X%"}}
 - For summary arrays: {{"label": "Summary Point", "value": "Key Data/Outcome"}}
 - For tables arrays: {{"title": "Table Title", "headers": ["Col1", "Col2", ...], "data": [["Row1Data1", "Row1Data2"], ...]}}
 
-Make the presentation executive-ready with clear business impact focus. Ensure the entire output is a single, valid JSON object.
+**SPECIFIC CONTENT EXAMPLES FOR KEY SLIDES:**
+
+**Slide 5 - Challenges & Opportunities Template:**
+Content should include:
+- "Market Challenges: Rising customer acquisition costs (+X% YoY) and increasing competition present opportunities for AI-driven personalization"
+- "Engagement Opportunity: X% of customers show higher lifetime value with personalized cross-channel journeys - Blueshift's AI unlocks this potential"
+- "Data Utilization Gap: Only X% of available customer data currently leveraged - significant growth through Blueshift's unified customer profiles"
+- "Automation Expansion: Manual processes consuming X% of marketing resources - Blueshift's intelligent automation reclaims capacity"
+
+Metrics should include improvements like:
+- Customer Acquisition Cost trends with Blueshift optimization
+- Email engagement rate improvements (target: +25-40%)
+- Customer Lifetime Value increases (target: +20-45%)
+- Marketing automation coverage growth (target: +50-70%)
+
+**Slide 6 - Strategic Recommendations Template:**
+Content should include:
+- "Immediate Priority: Deploy Blueshift's AI-powered journey orchestration to increase engagement by X% and reduce manual work by X%"
+- "Personalization Acceleration: Leverage Blueshift's real-time CDP for dynamic campaigns delivering 3x higher conversion rates"
+- "Cross-Channel Integration: Implement unified experiences using Blueshift's omnichannel capabilities"
+- "Predictive Analytics Investment: Utilize ML models for churn prediction and LTV optimization to increase retention by X%"
+
+ROI Projections should show:
+- AI Journey Orchestration: 340% ROI with 45% engagement increase
+- Real-Time Personalization: 280% ROI with 35% click rate improvement
+- Predictive Segmentation: 420% ROI with 50% relevance increase
+- Cross-Channel Optimization: 250% ROI with 25% channel synergy improvement
+
+Make the presentation executive-ready with clear business impact focus and specific Blueshift value propositions. Ensure the entire output is a single, valid JSON object.
 """
     return prompt
