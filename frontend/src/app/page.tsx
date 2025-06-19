@@ -276,15 +276,15 @@ export default function Home() {
           <ul className="space-y-2">
             <li className="flex items-start">
               <span className="text-blue-500 mr-2">•</span>
-              <span className="text-gray-700">Total Revenue: ${totalRevenue.toFixed(2)}</span>
+              <span className="text-gray-700">Total Revenue: ${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </li>
             <li className="flex items-start">
               <span className="text-blue-500 mr-2">•</span>
-              <span className="text-gray-700">Total Purchases: {totalPurchases}</span>
+              <span className="text-gray-700">Total Purchases: {totalPurchases.toLocaleString('en-US')}</span>
             </li>
             <li className="flex items-start">
               <span className="text-blue-500 mr-2">•</span>
-              <span className="text-gray-700">Average Order Value: ${averageOrderValue.toFixed(2)}</span>
+              <span className="text-gray-700">Average Order Value: ${averageOrderValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </li>
           </ul>
         </div>

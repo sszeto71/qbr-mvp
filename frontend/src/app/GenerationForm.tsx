@@ -37,11 +37,16 @@ const GenerationForm: React.FC<GenerationFormProps> = ({ setResult }) => {
     try {
       console.log('Form data being sent:', Object.fromEntries(formData));
       console.log('Sending request to http://localhost:8000/api/generate');
+      
+      // Add network connectivity check
+      console.log('Testing network connectivity...');
       const response = await fetch('http://localhost:8000/api/generate', {
         method: 'POST',
         body: formData,
       });
       console.log('Received response:', response);
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         console.error('HTTP error! Status:', response.status);
@@ -62,7 +67,30 @@ const GenerationForm: React.FC<GenerationFormProps> = ({ setResult }) => {
       setResult(data, clientInfo);
     } catch (error) {
       console.error('Fetch Error:', error);
-      // Handle error appropriately
+      
+      // Type guard for Error objects
+      if (error instanceof Error) {
+        console.error('Error type:', error.constructor.name);
+        console.error('Error message:', error.message);
+        
+        // Check if it's a network error
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+          console.error('Network error detected - likely backend server is not running');
+          alert('Connection failed: Backend server may not be running on http://localhost:8000');
+        } else if (error.message.includes('Failed to fetch')) {
+          console.error('Failed to fetch error - checking possible causes:');
+          console.error('1. Backend server not running on port 8000');
+          console.error('2. CORS issues');
+          console.error('3. Network connectivity problems');
+          alert('Failed to connect to backend server. Please check if the server is running on port 8000.');
+        } else {
+          console.error('Unexpected error:', error);
+          alert(`Request failed: ${error.message}`);
+        }
+      } else {
+        console.error('Unknown error type:', typeof error);
+        alert('An unknown error occurred during the request');
+      }
     } finally {
       setLoading(false);
     }
