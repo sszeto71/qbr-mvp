@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from prompt_generator import create_qbr_prompt
 from pdf_generator import generate_qbr_pdf, create_pdf_response
+from pptx_generator import generate_qbr_pptx, create_pptx_response
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -364,4 +365,54 @@ async def export_pdf(
         return {
             "error": "PDF Export Error",
             "message": f"Failed to generate PDF: {str(e)}"
+        }
+
+
+@app.post("/api/export-pptx")
+async def export_pptx(
+    client_name: str = Form(...),
+    client_website: str = Form(...),
+    industry: str = Form(...),
+    qbr_content: str = Form(...),
+):
+    """
+    Export QBR content to PowerPoint format with Blueshift branding
+    
+    Args:
+        client_name: Name of the client
+        client_website: Client's website URL
+        industry: Client's industry
+        qbr_content: JSON string containing the QBR slide data
+    
+    Returns:
+        PowerPoint file as downloadable attachment
+    """
+    logger.info("Received request at /api/export-pptx")
+    logger.info(f"Client Name: {client_name}")
+    logger.info(f"Industry: {industry}")
+    
+    try:
+        # Generate PowerPoint
+        pptx_bytes = generate_qbr_pptx(
+            qbr_data=qbr_content,
+            client_name=client_name,
+            client_website=client_website,
+            industry=industry
+        )
+        
+        # Create filename
+        safe_client_name = "".join(c for c in client_name if c.isalnum() or c in (' ', '-', '_')).rstrip()
+        filename = f"QBR_{safe_client_name.replace(' ', '_')}.pptx"
+        
+        logger.info(f"Successfully generated PowerPoint: {filename}")
+        
+        # Return PowerPoint as downloadable file
+        return create_pptx_response(pptx_bytes, filename)
+        
+    except Exception as e:
+        logger.error(f"Error exporting PowerPoint: {str(e)}")
+        logger.exception(e)
+        return {
+            "error": "PowerPoint Export Error",
+            "message": f"Failed to generate PowerPoint: {str(e)}"
         }
